@@ -72,7 +72,7 @@ class Paper(Base):
     date_uploaded = Column('Date_Uploaded', DateTime, default=datetime.utcnow)
     abstract = Column('Abstract', Text) 
     author_id = Column('Author_ID', Integer, ForeignKey('researcher.User_ID'))
-    project_id = Column('Project_ID', Integer, ForeignKey('project.Project_ID'))  # Fixed this line
+    project_id = Column('Project_ID', Integer, ForeignKey('project.Project_ID'))
 
 
 class PaperReview(Base):
@@ -86,8 +86,8 @@ class PaperReview(Base):
 
 class Feedback(Base):
     __tablename__ = "feedback"
-    id = Column('id', Integer, primary_key=True, index=True)  # ✅ New primary key
-    review_id = Column('Review_ID', Integer, ForeignKey("paper_review.Review_ID"), nullable=False)  # ✅ Now can repeat
+    id = Column('id', Integer, primary_key=True, index=True) 
+    review_id = Column('Review_ID', Integer, ForeignKey("paper_review.Review_ID"), nullable=False) 
     feedback = Column('Feedback', Text)
 
 
@@ -124,5 +124,5 @@ class AccessRequest(Base):
     status = Column('Status', String(50), default="pending") 
     date_requested = Column('Date_Requested', DateTime, default=datetime.utcnow)
     date_decided = Column('Date_Decided', DateTime, nullable=True)
-    approved_by = Column('Approved_By', Integer, ForeignKey("researcher.User_ID"), nullable=True)  # ✅ Correct name
+    approved_by = Column('Approved_By', Integer, ForeignKey("researcher.User_ID"), nullable=True)
     admin_approved_by = Column('Admin_Approved_By', Integer, ForeignKey("admin.User_ID"), nullable=True)
