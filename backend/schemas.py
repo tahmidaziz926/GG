@@ -23,8 +23,8 @@ class UserRegister(BaseModel):
     password: str
     role: str
     education: Optional[str] = None
-    citation_count: Optional[int] = 0  # ✅ Add this field
-    publication_count: Optional[int] = 0  # ✅ Add this field
+    citation_count: Optional[int] = 0  
+    publication_count: Optional[int] = 0  
 
 class PaperBase(BaseModel):
     title: str
@@ -36,13 +36,13 @@ class PaperCreate(BaseModel):
     title: str
     abstract: str
     status: str
-    project_id: Optional[int] = None  # now optional
+    project_id: Optional[int] = None  
 
     
 from pydantic import Field
 
 class PaperOut(BaseModel):
-    id: int = Field(alias="paper_id")  # ✅ Map 'id' to 'paper_id'
+    id: int = Field(alias="paper_id")  
     title: str
     abstract: str
     date_uploaded: datetime
@@ -52,17 +52,17 @@ class PaperOut(BaseModel):
 
     model_config = ConfigDict(
         from_attributes=True,
-        populate_by_name=True  # ✅ This allows both alias and original name
+        populate_by_name=True  
     )
 
 class PaperReviewCreate(BaseModel):
-    decision: str  # ✅ Match database field name
+    decision: str  
 
 class PaperReviewOut(PaperReviewCreate):
     id: int
     paper_id: int
     reviewer_id: int
-    review_date: datetime  # ✅ Add missing field
+    review_date: datetime  
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -89,7 +89,7 @@ class ProjectMemberBase(BaseModel):
 class ProjectMemberOut(ProjectMemberBase):
     id: int
     project_id: int
-    role_in_project: Optional[str] = None  # ✅ Add missing field
+    role_in_project: Optional[str] = None  
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -115,7 +115,7 @@ class DatasetCreate(BaseModel):
 class DatasetOut(DatasetCreate):
     id: int
     owner_id: int
-    date_created: datetime  # ✅ Change to datetime
+    date_created: datetime  
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -135,7 +135,7 @@ class FeedbackCreate(BaseModel):
     feedback: str
     
 class FeedbackOut(FeedbackCreate):
-    id: int  # ✅ Add the new primary key
+    id: int  
     # review_id can now repeat
 
     model_config = ConfigDict(from_attributes=True)
@@ -147,7 +147,7 @@ class AccessRequestOut(BaseModel):
     status: str
     date_requested: datetime
     date_decided: Optional[datetime] = None
-    approved_by: Optional[int] = None  # ✅ Match database column name
+    approved_by: Optional[int] = None  
     admin_approved_by: Optional[int] = None
     
     model_config = ConfigDict(from_attributes=True)
