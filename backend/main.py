@@ -30,9 +30,6 @@ def get_db():
         db.close()
 
 
-# ------------------------
-# AUTH / LOGIN
-# ------------------------
 @app.post("/login/", response_model=schemas.LoginResp)
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     # Check Admin
@@ -76,7 +73,7 @@ def get_user_role(user_id: int, db: Session):
     if user:
         return "reviewer"
     
-    return None  # User not found
+    return None  
 
 
 @app.post("/register/")
@@ -112,27 +109,21 @@ def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Email already registered")
 
 
-# ------------------------
-# ROLE HELPERS
-# ------------------------
 def get_caller(x_user_role: str = Header(...), x_user_id: int = Header(...)):
     return {"role": x_user_role, "user_id": x_user_id}
 
 
-# ------------------------
-# PROJECTS
-# ------------------------
 def get_current_user(user_id: int = Header(..., alias="X-User-Id"), db: Session = Depends(get_db)):
     """Return the full user object (Researcher/Admin/Reviewer) based on ID"""
-    # Check Researcher
+
     user = db.query(models.Researcher).filter(models.Researcher.user_id == user_id).first()
     if user:
         return user
-    # Check Admin
+
     user = db.query(models.Admin).filter(models.Admin.user_id == user_id).first()
     if user:
         return user
-    # Check Reviewer
+   
     user = db.query(models.Reviewer).filter(models.Reviewer.user_id == user_id).first()
     if user:
         return user
@@ -145,7 +136,7 @@ def create_project(
     db: Session = Depends(get_db),
     current_user: Union[models.Researcher, models.Admin, models.Reviewer] = Depends(get_current_user)
 ):
-    # Only researchers or admins can create projects
+
     if not isinstance(current_user, (models.Researcher, models.Admin)):
         raise HTTPException(status_code=403, detail="Only researchers or admins can create projects")
 
@@ -236,9 +227,6 @@ def add_project_tag(project_id: int, pt: schemas.ProjectTagBase, db: Session = D
         raise HTTPException(status_code=409, detail="Tag already exists for project")
 
 
-# ------------------------
-# PAPERS
-# ------------------------
 @app.post("/papers/", response_model=schemas.PaperOut)
 def create_paper(
     paper_data: schemas.PaperCreate,
@@ -248,7 +236,6 @@ def create_paper(
     if caller["role"] != "researcher":
         raise HTTPException(status_code=403, detail="Only researchers can submit papers")
 
-    # Verify researcher exists
     researcher = db.query(models.Researcher).filter(
         models.Researcher.user_id == caller["user_id"]
     ).first()
@@ -256,7 +243,6 @@ def create_paper(
     if not researcher:
         raise HTTPException(status_code=404, detail="Researcher not found")
 
-    # Validate project - USE THE CORRECT ATTRIBUTE NAME (.id not .project_id)
     project = db.query(models.Project).filter(
         models.Project.id == paper_data.project_id  # ← THIS IS THE FIX
     ).first()
@@ -267,7 +253,6 @@ def create_paper(
             detail=f"Project with ID {paper_data.project_id} not found"
         )
 
-    # Create the paper
     paper = models.Paper(
         title=paper_data.title,
         abstract=paper_data.abstract,
@@ -298,7 +283,6 @@ def get_current_researcher(user_id: int = Header(..., alias="X-User-Id"), db: Se
         )
     return user
 
-# Papers
 @app.put("/papers/{paper_id}/", response_model=schemas.PaperOut)
 def update_paper(paper_id: int, p: schemas.PaperCreate, db: Session = Depends(get_db), caller=Depends(get_caller)):
     paper = db.get(models.Paper, paper_id)
@@ -321,8 +305,6 @@ def delete_paper(paper_id: int, db: Session = Depends(get_db), caller=Depends(ge
     db.commit()
     return {"message": "deleted"}
 
-
-#projects
 
 @app.put("/projects/{project_id}/", response_model=schemas.ProjectOut)
 def update_project(project_id: int, project: schemas.ProjectCreate, db: Session = Depends(get_db), caller=Depends(get_caller)):
@@ -347,8 +329,6 @@ def delete_project(project_id: int, db: Session = Depends(get_db), caller=Depend
     return {"message": "deleted"}
 
 
-# REVIEWS
-# ------------------------
 @app.post("/papers/{paper_id}/reviews/", response_model=schemas.PaperReviewOut)
 def create_review(paper_id: int, r: schemas.PaperReviewCreate, db: Session = Depends(get_db), caller=Depends(get_caller)):
     if caller["role"] != "reviewer":
@@ -379,10 +359,7 @@ def list_papers(
     else:
         raise HTTPException(status_code=403, detail="Access denied")
 
-# ------------------------
-# DATASETS
-# ------------------------
-# main.py
+
 @app.post("/datasets/", response_model=schemas.DatasetOut)
 def create_dataset(d: schemas.DatasetCreate, db: Session = Depends(get_db), caller=Depends(get_caller)):
     if caller["role"] != "researcher":
@@ -398,8 +375,6 @@ def create_dataset(d: schemas.DatasetCreate, db: Session = Depends(get_db), call
     db.commit()
     db.refresh(dataset)
     return dataset
-
-
 
 
 @app.get("/datasets/", response_model=Union[List[schemas.DatasetOut], dict])
@@ -451,7 +426,6 @@ def add_dataset_tag(dataset_id: int, dtag: schemas.DatasetTagBase, db: Session =
         db.rollback()
         raise HTTPException(status_code=409, detail="Tag already exists for dataset")
 
-# Datasets
 @app.put("/datasets/{dataset_id}/", response_model=schemas.DatasetOut)
 def update_dataset(dataset_id: int, d: schemas.DatasetCreate, db: Session = Depends(get_db), caller=Depends(get_caller)):
     dataset = db.get(models.Dataset, dataset_id)
@@ -474,8 +448,6 @@ def delete_dataset(dataset_id: int, db: Session = Depends(get_db), caller=Depend
     return {"message": "deleted"}
 
 
-# FEEDBACK
-# ------------------------
 @app.post("/feedback/", response_model=schemas.FeedbackOut)
 def add_feedback(
     f: schemas.FeedbackCreate, 
@@ -500,9 +472,6 @@ def list_feedbacks(db: Session = Depends(get_db)):
 
 
 
-# ------------------------
-# ACCESS REQUESTS
-# ------------------------
 @app.post("/datasets/{dataset_id}/access-requests/", response_model=schemas.AccessRequestOut)
 def create_access_request(dataset_id: int, db: Session = Depends(get_db), caller=Depends(get_caller)):
     if caller["role"] != "researcher":
@@ -512,7 +481,6 @@ def create_access_request(dataset_id: int, db: Session = Depends(get_db), caller
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
-    # prevent duplicate pending requests
     existing = db.query(models.AccessRequest).filter(
         models.AccessRequest.dataset_id == dataset_id,
         models.AccessRequest.requester_id == caller["user_id"],
@@ -558,10 +526,6 @@ def deny_access_request(req_id: int, db: Session = Depends(get_db), caller=Depen
     db.refresh(req)
     return req
 
-
-# ------------------------
-# ADMIN ENDPOINTS
-# ------------------------
 @app.get("/admin/all-researchers/", response_model=list[schemas.ResearcherPublic])
 def all_researchers(db: Session = Depends(get_db), caller=Depends(get_caller)):
     if caller["role"] != "admin":
@@ -577,10 +541,6 @@ def all_reviewers(db: Session = Depends(get_db), caller=Depends(get_caller)):
 
 
 
-
-
-# PUBLICATION / CITATION COUNTS
-# ------------------------
 @app.get("/researcher/publication-citation-counts/")
 def pub_cit_counts(db: Session = Depends(get_db)):
     query_result = db.query(
@@ -606,11 +566,64 @@ def get_authenticated_user(user_id: int = Header(..., alias="X-User-Id"), db: Se
     
     return {"user_id": user_id, "role": user_role}
 
-# Use it in your endpoints
 @app.get("/admin/dashboard/")
 def admin_dashboard(current_user: dict = Depends(get_authenticated_user)):
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    # Admin-only functionality
     return {"message": "Welcome to admin dashboard"}
+
+
+@app.get("/projects/search/", response_model=List[schemas.ProjectOut])
+def search_projects(
+    title: str | None = None,
+    tag: str | None = None,
+    created_by: int | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Project)
+
+    if title:
+        query = query.filter(models.Project.title.ilike(f"%{title}%"))
+    if created_by:
+        query = query.filter(models.Project.created_by == created_by)
+    if tag:
+        query = query.join(models.ProjectTag).join(models.Tag).filter(models.Tag.tag_name.ilike(f"%{tag}%"))
+
+    return query.all()
+
+@app.get("/papers/search/", response_model=List[schemas.PaperOut])
+def search_papers(
+    title: str | None = None,
+    status: str | None = None,
+    project_id: int | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Paper)
+
+    if title:
+        query = query.filter(models.Paper.title.ilike(f"%{title}%"))
+    if status:
+        query = query.filter(models.Paper.status == status)
+    if project_id:
+        query = query.filter(models.Paper.project_id == project_id)
+
+    return query.all()
+
+@app.get("/datasets/search/", response_model=List[schemas.DatasetOut])
+def search_datasets(
+    title: str | None = None,
+    tag: str | None = None,
+    owner_id: int | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Dataset)
+
+    if title:
+        query = query.filter(models.Dataset.title.ilike(f"%{title}%"))
+    if owner_id:
+        query = query.filter(models.Dataset.owner_id == owner_id)
+    if tag:
+        query = query.join(models.DatasetTag).join(models.Tag).filter(models.Tag.tag_name.ilike(f"%{tag}%"))
+
+    return query.all()
