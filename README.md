@@ -1,7 +1,7 @@
 
-# Lab Manager - React Frontend (custom for your FastAPI backend)
+# Lab Manager - React Frontend 
 
-This frontend is tailored to the FastAPI backend you uploaded (uses X-User-Id and X-User-Role headers for auth).
+This frontend is tailored to the FastAPI backend.
 
 ## Quick start
 
